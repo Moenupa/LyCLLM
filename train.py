@@ -6,13 +6,12 @@ from lightning.pytorch.loggers import CSVLogger
 from lightning.pytorch.strategies import DeepSpeedStrategy
 
 from data.datamodule_ov import MultiModalDataModule
-from learner.llava import LlavaSFTModule
+from learner.llava_ov import LlavaSFTModule
 
 
 
 def main():
     L.seed_everything(42, workers=True)
-
     model_name = "llava-hf/llava-onevision-qwen2-0.5b-ov-hf"
     output_dir = "./outputs/llava_onevision_05b_zero3_sft_1epoch"
 

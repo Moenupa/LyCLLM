@@ -1,9 +1,6 @@
 import torch
 import lightning as L
-from transformers import (
-    AutoProcessor,
-    LlavaForConditionalGeneration,
-)
+from transformers import AutoProcessor, LlavaOnevisionForConditionalGeneration
 
 class LlavaSFTModule(L.LightningModule):
     def __init__(
