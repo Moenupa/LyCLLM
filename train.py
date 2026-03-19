@@ -68,13 +68,14 @@ def main():
 
     trainer = L.Trainer(
         accelerator="gpu",
-        strategy=strategy,
+        # strategy=strategy,
+        strategy="auto",
         devices="auto",
         max_steps=100,
         precision="bf16-mixed",
         accumulate_grad_batches=4,
         gradient_clip_val=1.0,
-        log_every_n_steps=10,
+        log_every_n_steps=1,
         num_sanity_val_steps=0,
         callbacks=[ckpt_callback],
         logger=WandbLogger(
