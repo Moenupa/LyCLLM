@@ -70,7 +70,7 @@ def main():
         accelerator="gpu",
         strategy=strategy,
         devices="auto",
-        max_steps=1,
+        max_steps=100,
         precision="bf16-mixed",
         accumulate_grad_batches=4,
         gradient_clip_val=1.0,
