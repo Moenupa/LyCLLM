@@ -1,6 +1,4 @@
-git+https://github.com/SmallPigPeppa/pytorch-lightning.git@npu_support_fp16_mixed
 torch
-pytorch
 torchvision
 tqdm
 wandb
@@ -8,5 +6,6 @@ deepspeed
 transformers
 datasets
 huggingface
+git+https://github.com/SmallPigPeppa/pytorch-lightning.git@npu_support_fp16_mixed
 
 
