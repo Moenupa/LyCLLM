@@ -5,3 +5,10 @@ snapshot_download(
     local_dir="../download/Qwen3-VL-2B-Instruct",
     max_workers=16,
 )
+
+
+snapshot_download(
+    repo_id="llava-hf/llava-onevision-qwen2-0.5b-ov-hf",
+    local_dir="../download/llava-onevision-qwen2-0.5b-ov-hf",
+    max_workers=16,
+)
