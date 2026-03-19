@@ -96,7 +96,7 @@ def main():
         dm.processor.save_pretrained(hf_save_dir)
     trainer.strategy.barrier()
 
-    print(f"训练完成，HF 权重已保存到: {hf_save_dir}")
+    print(f"HF 权重已保存到: {hf_save_dir}")
     print(f"Lightning checkpoint: {ckpt_callback.last_model_path}")
 
 
