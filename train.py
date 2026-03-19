@@ -27,7 +27,7 @@ def main():
         batch_size=1,
         num_workers=2,
         max_length=8192,
-        streaming=False,
+        streaming=True,
     )
 
     model_dtype = torch.bfloat16
