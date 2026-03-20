@@ -1,16 +1,17 @@
-import torch
 import lightning as L
-from transformers import AutoProcessor, LlavaOnevisionForConditionalGeneration
+import torch
+from transformers import LlavaOnevisionForConditionalGeneration
+
 
 class LlavaSFTModule(L.LightningModule):
     def __init__(
-            self,
-            model_name_or_path: str,
-            lr: float = 1e-5,
-            weight_decay: float = 0.01,
-            trust_remote_code: bool = True,
-            use_gradient_checkpointing: bool = True,
-            torch_dtype: torch.dtype = torch.bfloat16,
+        self,
+        model_name_or_path: str,
+        lr: float = 1e-5,
+        weight_decay: float = 0.01,
+        trust_remote_code: bool = True,
+        use_gradient_checkpointing: bool = True,
+        torch_dtype: torch.dtype = torch.bfloat16,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["torch_dtype"])
@@ -56,4 +57,3 @@ class LlavaSFTModule(L.LightningModule):
             lr=self.hparams.lr,
             betas=(0.9, 0.95),
         )
-

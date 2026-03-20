@@ -1,13 +1,11 @@
 import logging
 import re
-from typing import List, Optional, Tuple
 
 import lightning as L
 from datasets import interleave_datasets, load_dataset
 from PIL import Image
 from torch.utils.data import DataLoader
 from transformers import AutoProcessor
-
 
 LOGGER = logging.getLogger(__name__)
 IMAGE_TOKEN_RE = re.compile(r"<image>\s*")
@@ -17,7 +15,7 @@ class MultiModalDataModule(L.LightningDataModule):
     def __init__(
         self,
         model_name_or_path: str,
-        train_datasets: List[dict],
+        train_datasets: list[dict],
         batch_size: int = 1,
         num_workers: int = 2,
         max_length: int = 1024,
@@ -34,7 +32,7 @@ class MultiModalDataModule(L.LightningDataModule):
         self.train_dataset = None
 
     @staticmethod
-    def _clean_text(text: Optional[str]) -> str:
+    def _clean_text(text: str | None) -> str:
         return IMAGE_TOKEN_RE.sub("", (text or "").strip()).strip()
 
     @classmethod
@@ -57,7 +55,7 @@ class MultiModalDataModule(L.LightningDataModule):
                 return True
         return False
 
-    def _build_messages(self, sample: dict) -> Tuple[Optional[list], Optional[Image.Image]]:
+    def _build_messages(self, sample: dict) -> tuple[list | None, Image.Image | None]:
         if not self._is_valid_multimodal_sample(sample):
             return None, None
 

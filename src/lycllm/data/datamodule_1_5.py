@@ -1,8 +1,7 @@
 import lightning as L
+from datasets import interleave_datasets, load_dataset
 from torch.utils.data import DataLoader
-from datasets import load_dataset, interleave_datasets
 from transformers import AutoProcessor
-
 
 
 class MultiModalDataModule(L.LightningDataModule):
@@ -114,6 +113,7 @@ class MultiModalDataModule(L.LightningDataModule):
 
 if __name__ == "__main__":
     import os
+
     from huggingface_hub import constants as hf_constants
 
     print("HF_HOME env =", os.environ.get("HF_HOME"))

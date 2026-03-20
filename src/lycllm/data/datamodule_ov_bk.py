@@ -1,16 +1,16 @@
-import lightning as L
-from torch.utils.data import DataLoader
-from datasets import load_dataset, interleave_datasets
-from transformers import AutoProcessor
-from typing import List
 import re
+
+import lightning as L
+from datasets import interleave_datasets, load_dataset
+from torch.utils.data import DataLoader
+from transformers import AutoProcessor
 
 
 class MultiModalDataModule(L.LightningDataModule):
     def __init__(
         self,
         model_name_or_path: str,
-        train_datasets: List[dict],
+        train_datasets: list[dict],
         batch_size: int = 1,
         num_workers: int = 2,
         max_length: int = 1024,
