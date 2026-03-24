@@ -33,7 +33,7 @@ if TYPE_CHECKING:
         ProcessorMixin,
     )
 
-    from ..hparams import ModelArguments
+    from ..hparams.model_args import ModelArguments
 
 
 class TokenizerModule(TypedDict):
@@ -48,9 +48,7 @@ def _get_init_kwargs(model_args: "ModelArguments") -> dict[str, Any]:
     """
     return {
         "trust_remote_code": model_args.trust_remote_code,
-        "cache_dir": model_args.cache_dir,
         "revision": model_args.model_revision,
-        "token": model_args.hf_hub_token,
     }
 
 

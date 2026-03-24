@@ -7,12 +7,15 @@ name = "LyCLLM"
 version = "0.1.2"
 description = "Continual Learning Library for Language Models based on PyTorch Lightning (2.x)."
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.11,<3.13"
 dependencies = [
-    "datasets[vision]>=4.0,<5",
+    "datasets[vision,audio]>=4.4,<5",
+    "transformers[vision,audio,video]>=4.57,<5",
+    "decord",
+    "peft>=0.11,<0.19",
     "deepspeed<0.17",
     "jsonargparse[signatures,jsonschema,jsonnet]>4.40,<4.48",
-    "transformers<5",
+    "omegaconf"
 ]
 
 [dependency-groups]
@@ -44,6 +47,7 @@ ghactions = [
 torch-cuda = [
     "torch>=2.7.1,<2.10.0",
     "torchvision",
+    "torchaudio",
 ]
 lightning = [
     "lightning>=2.2.0,<2.6.0",
@@ -92,6 +96,7 @@ explicit = true
 [tool.ruff.lint]
 ignore = [
     "C408",  # collection
+    "C901",  # function too complex
     "E501",  # line too long
     "D100",  # no doc public module
     "D101",  # no doc public class
@@ -108,7 +113,7 @@ extend-select = [
     "I",      # isort
     "W",      # warning
     "UP",     # pyupgrade
-    "D",      # pydocstyle
+    # "D",      # pydocstyle
     "PT009",  # pytest assert
     "RUF022", # sort __all__
 ]
