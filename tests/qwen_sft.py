@@ -25,6 +25,7 @@ def test_qwen_sft(
     dm = MultiModalDataModule(
         model_args=model_args,
         data_args=data_args,
+        training_args=training_args,
     )
 
     lit_model = Qwen3VLSFTModule(

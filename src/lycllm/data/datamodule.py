@@ -42,14 +42,14 @@ class MultiModalDataModule(L.LightningDataModule):
         self,
         model_args: ModelArguments,
         data_args: DataArguments,
-        train_args: Seq2SeqTrainingArguments,
+        training_args: Seq2SeqTrainingArguments,
     ):
         super().__init__()
         self.save_hyperparameters()
 
         self.model_args: ModelArguments = model_args
         self.data_args: DataArguments = data_args
-        self.train_args: Seq2SeqTrainingArguments = train_args
+        self.training_args: Seq2SeqTrainingArguments = training_args
 
         # values to be lazy-init
         self.tokenizer: PreTrainedTokenizer = None  # ty:ignore[invalid-assignment]
@@ -232,10 +232,10 @@ class MultiModalDataModule(L.LightningDataModule):
 
         return DataLoader(
             dataset,  # ty:ignore[invalid-argument-type]
-            batch_size=self.train_args.per_device_train_batch_size,
-            num_workers=self.train_args.dataloader_num_workers,
+            batch_size=self.training_args.per_device_train_batch_size,
+            num_workers=self.training_args.dataloader_num_workers,
             collate_fn=self.collate_fn,
             pin_memory=True,
-            persistent_workers=self.train_args.dataloader_num_workers > 0,
+            persistent_workers=self.training_args.dataloader_num_workers > 0,
             drop_last=False,
         )

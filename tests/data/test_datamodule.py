@@ -33,7 +33,7 @@ def test_get_datasets(data_args: DataArguments):
 
 @pytest.fixture
 def real_datamodule(model_args: ModelArguments, data_args: DataArguments):
-    dm = MultiModalDataModule(model_args, data_args)
+    dm = MultiModalDataModule(model_args, data_args, None)  # ty:ignore[invalid-argument-type]
     dm.setup()
     return dm
 
