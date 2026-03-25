@@ -1,6 +1,6 @@
 import lightning as L
 import torch
-from datasets import Dataset, DatasetDict, interleave_datasets, load_dataset
+from datasets import Dataset, IterableDataset, interleave_datasets, load_dataset
 from torch.utils.data import DataLoader
 from transformers import PreTrainedTokenizer, ProcessorMixin
 
@@ -16,21 +16,22 @@ from ..hparams.model_args import ModelArguments
 from ..model.loader import load_tokenizer
 
 
-def get_datasets(*load_dataset_kwargs: dict, data_args: DataArguments) -> list[Dataset]:
+def get_datasets(
+    *load_dataset_kwargs: dict, data_args: DataArguments
+) -> list[Dataset | IterableDataset]:
     datasets = []
     shuffle_kwargs = {"seed": get_seed()}
     if data_args.streaming:
         shuffle_kwargs |= {"buffer_size": data_args.buffer_size}
 
     for kwargs in load_dataset_kwargs:
-        kwargs["streaming"] = data_args.streaming
+        kwargs.setdefault("streaming", data_args.streaming)
+        kwargs.setdefault("split", "train")
+
         ds = load_dataset(**kwargs)
-        if isinstance(ds, DatasetDict) and "train" not in ds:
-            raise ValueError("DatasetDict should have a 'train' split.")
-        elif isinstance(ds, DatasetDict):
-            ds = ds["train"]
-        else:
-            assert isinstance(ds, Dataset), f"Expected a Dataset, but got {type(ds)}"
+        assert isinstance(ds, (Dataset, IterableDataset)), (
+            f"Expected a Dataset or IterableDataset, but got {type(ds)}"
+        )
         ds = ds.shuffle(**shuffle_kwargs)
         datasets.append(ds)
     return datasets
@@ -52,8 +53,8 @@ class MultiModalDataModule(L.LightningDataModule):
         self.tokenizer: PreTrainedTokenizer = None  # ty:ignore[invalid-assignment]
         self.processor: ProcessorMixin = None  # ty:ignore[invalid-assignment]
 
-        self.train_dataset: list[Dataset] | None = None
-        self.memory_dataset: list[Dataset] | None = None
+        self.train_dataset: list[Dataset | IterableDataset] | None = None
+        self.memory_dataset: list[Dataset | IterableDataset] | None = None
 
     def prepare_data(self):
         pass
@@ -194,7 +195,7 @@ class MultiModalDataModule(L.LightningDataModule):
         return model_inputs
 
     @property
-    def _dataset(self) -> list[Dataset]:
+    def _dataset(self) -> list[Dataset | IterableDataset]:
         return (self.train_dataset or []) + (self.memory_dataset or [])
 
     def train_dataloader(self):
@@ -205,7 +206,7 @@ class MultiModalDataModule(L.LightningDataModule):
             dataset = combined_dataset[0]
         else:
             dataset = interleave_datasets(
-                self._dataset,
+                self._dataset,  # ty:ignore[invalid-argument-type]
                 probabilities=self.data_args._interleave_probs,
                 seed=get_seed(),
                 stopping_strategy=self.data_args.interleave_strategy,
