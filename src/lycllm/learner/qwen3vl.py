@@ -27,6 +27,7 @@ class Qwen3VLSFTModule(L.LightningModule):
         self.finetuning_args = finetuning_args
         self.model = Qwen3VLForConditionalGeneration.from_pretrained(
             model_args.model_name_or_path,
+            dtype=torch.bfloat16,
             trust_remote_code=model_args.trust_remote_code,
         )
 

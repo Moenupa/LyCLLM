@@ -2,7 +2,7 @@ import lightning as L
 import torch
 from datasets import Dataset, IterableDataset, interleave_datasets, load_dataset
 from torch.utils.data import DataLoader
-from transformers import PreTrainedTokenizer, ProcessorMixin
+from transformers import PreTrainedTokenizer, ProcessorMixin, Seq2SeqTrainingArguments
 
 from ..extras.constants import (
     AUDIO_PLACEHOLDER,
@@ -42,12 +42,14 @@ class MultiModalDataModule(L.LightningDataModule):
         self,
         model_args: ModelArguments,
         data_args: DataArguments,
+        train_args: Seq2SeqTrainingArguments,
     ):
         super().__init__()
         self.save_hyperparameters()
 
         self.model_args: ModelArguments = model_args
         self.data_args: DataArguments = data_args
+        self.train_args: Seq2SeqTrainingArguments = train_args
 
         # values to be lazy-init
         self.tokenizer: PreTrainedTokenizer = None  # ty:ignore[invalid-assignment]
@@ -230,10 +232,10 @@ class MultiModalDataModule(L.LightningDataModule):
 
         return DataLoader(
             dataset,  # ty:ignore[invalid-argument-type]
-            batch_size=self.data_args.preprocessing_batch_size,
-            num_workers=self.data_args.preprocessing_num_workers or 8,
+            batch_size=self.train_args.per_device_train_batch_size,
+            num_workers=self.train_args.dataloader_num_workers,
             collate_fn=self.collate_fn,
             pin_memory=True,
-            persistent_workers=self.data_args.preprocessing_num_workers is not None,
+            persistent_workers=self.train_args.dataloader_num_workers > 0,
             drop_last=False,
         )
