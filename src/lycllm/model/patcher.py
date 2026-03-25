@@ -22,7 +22,7 @@ from transformers import PreTrainedModel, PreTrainedTokenizerBase
 if TYPE_CHECKING:
     from transformers import PreTrainedTokenizer, ProcessorMixin
 
-    from ..hparams import ModelArguments
+    from ..hparams.model_args import ModelArguments
 
 
 def patch_youtu_vl_model(model: "PreTrainedModel") -> None:

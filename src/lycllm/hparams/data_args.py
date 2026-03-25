@@ -25,19 +25,27 @@ class DataArguments:
 
     template: str | None = field(
         default=None,
-        metadata={"help": "Which template to use for constructing prompts in training and inference."},
+        metadata={
+            "help": "Which template to use for constructing prompts in training and inference."
+        },
     )
     dataset_kwargs: list[dict] | None = field(
         default_factory=list,
-        metadata={"help": "The name of dataset(s) to use for training. Use commas to separate multiple datasets."},
+        metadata={
+            "help": "The name of dataset(s) to use for training. Use commas to separate multiple datasets."
+        },
     )
     memory_dataset_kwargs: list[dict] | None = field(
         default_factory=list,
-        metadata={"help": "The name of dataset(s) to use for memory. Use commas to separate multiple datasets."},
+        metadata={
+            "help": "The name of dataset(s) to use for memory. Use commas to separate multiple datasets."
+        },
     )
     media_dir: str | None = field(
         default=None,
-        metadata={"help": "Path to the folder containing the images, videos or audios. Defaults to `dataset_dir`."},
+        metadata={
+            "help": "Path to the folder containing the images, videos or audios. Defaults to `dataset_dir`."
+        },
     )
     cutoff_len: int = field(
         default=2048,
@@ -49,7 +57,9 @@ class DataArguments:
     )
     mask_history: bool = field(
         default=False,
-        metadata={"help": "Whether or not to mask the history and train on the last turn only."},
+        metadata={
+            "help": "Whether or not to mask the history and train on the last turn only."
+        },
     )
     streaming: bool = field(
         default=False,
@@ -57,7 +67,9 @@ class DataArguments:
     )
     buffer_size: int = field(
         default=16384,
-        metadata={"help": "Size of the buffer to randomly sample examples from in dataset streaming."},
+        metadata={
+            "help": "Size of the buffer to randomly sample examples from in dataset streaming."
+        },
     )
     interleave_strategy: Literal[
         "first_exhausted", "all_exhausted", "all_exhausted_without_replacement"
@@ -69,7 +81,9 @@ class DataArguments:
     )
     interleave_probs: str | None = field(
         default=None,
-        metadata={"help": "Probabilities to sample data from datasets. Use commas to separate multiple datasets."},
+        metadata={
+            "help": "Probabilities to sample data from datasets. Use commas to separate multiple datasets."
+        },
     )
     _interleave_probs: list[float] | None = None
     overwrite_cache: bool = field(
@@ -86,23 +100,21 @@ class DataArguments:
     )
     max_samples: int | None = field(
         default=None,
-        metadata={"help": "For debugging purposes, truncate the number of examples for each dataset."},
-    )
-    eval_num_beams: int | None = field(
-        default=None,
-        metadata={"help": "Number of beams to use for evaluation. This argument will be passed to `model.generate`"},
+        metadata={
+            "help": "For debugging purposes, truncate the number of examples for each dataset."
+        },
     )
     ignore_pad_token_for_loss: bool = field(
         default=True,
-        metadata={"help": "Whether or not to ignore the tokens corresponding to the pad label in loss computation."},
-    )
-    eval_on_each_dataset: bool = field(
-        default=False,
-        metadata={"help": "Whether or not to evaluate on each dataset separately."},
+        metadata={
+            "help": "Whether or not to ignore the tokens corresponding to the pad label in loss computation."
+        },
     )
     packing: bool | None = field(
         default=None,
-        metadata={"help": "Enable sequences packing in training. Will automatically enable in pre-training."},
+        metadata={
+            "help": "Enable sequences packing in training. Will automatically enable in pre-training."
+        },
     )
     neat_packing: bool = field(
         default=False,
@@ -110,7 +122,9 @@ class DataArguments:
     )
     tool_format: str | None = field(
         default=None,
-        metadata={"help": "Tool format to use for constructing function calling examples."},
+        metadata={
+            "help": "Tool format to use for constructing function calling examples."
+        },
     )
     default_system: str | None = field(
         default=None,
@@ -118,7 +132,9 @@ class DataArguments:
     )
     enable_thinking: bool | None = field(
         default=True,
-        metadata={"help": "Whether or not to enable thinking mode for reasoning models."},
+        metadata={
+            "help": "Whether or not to enable thinking mode for reasoning models."
+        },
     )
     tokenized_path: str | None = field(
         default=None,
@@ -132,7 +148,9 @@ class DataArguments:
     )
     data_shared_file_system: bool = field(
         default=False,
-        metadata={"help": "Whether or not to use a shared file system for the datasets."},
+        metadata={
+            "help": "Whether or not to use a shared file system for the datasets."
+        },
     )
 
     def __post_init__(self):
@@ -143,9 +161,13 @@ class DataArguments:
 
         if self.interleave_probs is not None:
             self._interleave_probs = list(map(float, split_arg(self.interleave_probs)))
-            expected_len = len(self.dataset_kwargs or []) + len(self.memory_dataset_kwargs or [])
+            expected_len = len(self.dataset_kwargs or []) + len(
+                self.memory_dataset_kwargs or []
+            )
             if expected_len != len(self._interleave_probs):
-                raise ValueError("The length of dataset and interleave probs should be identical.")
+                raise ValueError(
+                    "The length of dataset and interleave probs should be identical."
+                )
 
         if self.streaming and self.max_samples is not None:
             raise ValueError("`max_samples` is incompatible with `streaming`.")

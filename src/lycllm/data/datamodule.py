@@ -1,9 +1,16 @@
 import lightning as L
+import torch
 from datasets import Dataset, DatasetDict, interleave_datasets, load_dataset
 from torch.utils.data import DataLoader
 from transformers import PreTrainedTokenizer, ProcessorMixin
 
-from ..extras.constants import get_seed
+from ..extras.constants import (
+    AUDIO_PLACEHOLDER,
+    IGNORE_INDEX,
+    IMAGE_PLACEHOLDER,
+    VIDEO_PLACEHOLDER,
+    get_seed,
+)
 from ..hparams.data_args import DataArguments
 from ..hparams.model_args import ModelArguments
 from ..model.loader import load_tokenizer
@@ -23,7 +30,7 @@ def get_datasets(*load_dataset_kwargs: dict, data_args: DataArguments) -> list[D
         elif isinstance(ds, DatasetDict):
             ds = ds["train"]
         else:
-            assert isinstance(ds, Dataset), f'Expected a Dataset, but got {type(ds)}'
+            assert isinstance(ds, Dataset), f"Expected a Dataset, but got {type(ds)}"
         ds = ds.shuffle(**shuffle_kwargs)
         datasets.append(ds)
     return datasets
@@ -34,7 +41,6 @@ class MultiModalDataModule(L.LightningDataModule):
         self,
         model_args: ModelArguments,
         data_args: DataArguments,
-        ignore_index: int = -100,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -62,77 +68,101 @@ class MultiModalDataModule(L.LightningDataModule):
             return
 
         if self.data_args.dataset_kwargs is not None:
-            self.train_dataset = get_datasets(*self.data_args.dataset_kwargs, data_args=self.data_args)
+            self.train_dataset = get_datasets(
+                *self.data_args.dataset_kwargs, data_args=self.data_args
+            )
 
         if self.data_args.memory_dataset_kwargs is not None:
-            self.memory_dataset = get_datasets(*self.data_args.memory_dataset_kwargs, data_args=self.data_args)
+            self.memory_dataset = get_datasets(
+                *self.data_args.memory_dataset_kwargs, data_args=self.data_args
+            )
+
+    def _get_prefix_input_ids(self, messages, image=None):
+        """Return input_ids for one message prefix using the training processor path."""
+        text = self.processor.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=False,
+        )
+        inputs = self.processor(
+            text=[text],
+            images=[image] if image is not None else None,
+            padding=False,
+            truncation=True,
+            max_length=self.data_args.cutoff_len,
+            return_tensors=None,
+        )
+        return inputs["input_ids"][0]
+
+    def _build_assistant_labels(
+        self, messages, image, input_ids_row, attention_mask_row
+    ):
+        """Keep labels only on assistant turns."""
+        seq_len = int(attention_mask_row.sum().item())
+        labels = torch.full_like(input_ids_row, IGNORE_INDEX)
+
+        prefix_lens = [0]
+        for end in range(1, len(messages)):
+            prefix_ids = self._get_prefix_input_ids(messages[:end], image=image)
+            prefix_lens.append(min(len(prefix_ids), seq_len))
+        prefix_lens.append(seq_len)
+
+        for turn_idx, (start, end) in enumerate(zip(prefix_lens[:-1], prefix_lens[1:])):
+            if messages[turn_idx]["role"] == "assistant" and end > start:
+                labels[start:end] = input_ids_row[start:end]
+
+        return labels
 
     def collate_fn(self, batch):
+        processor = self.processor
         texts, images, sample_ids = [], [], []
-
-        image_token = getattr(self.processor, "image_token", "<image>")
-        video_token = getattr(self.processor, "video_token", "<video>")
+        batch_messages, batch_image_objs = [], []
+        role_map = {
+            "human": "user",
+            "user": "user",
+            "gpt": "assistant",
+            "assistant": "assistant",
+        }
 
         for sample in batch:
-            conversations = sample.get("conversations") or []
-            if not conversations:
-                continue
-
+            image = sample.get("image")
+            need_image = image is not None
+            image_rgb = None
             messages = []
-            used_image = False
-            has_assistant = False
 
-            for turn in conversations:
-                role = {
-                    "human": "user",
-                    "user": "user",
-                    "gpt": "assistant",
-                    "assistant": "assistant",
-                }.get(turn.get("from"))
-                if role is None:
-                    continue
-
+            for turn in sample.get("conversations", []):
+                role = role_map.get(turn.get("from"))
+                text = turn.get("value") or ""
+                # Remove raw <image>/<video>/<audio> markers from text.
+                # They will be added back as structured content by the chat template.
                 text = (
-                    (turn.get("value") or "")
-                    .replace(image_token, "")
-                    .replace(video_token, "")
+                    text.replace(IMAGE_PLACEHOLDER, "")
+                    .replace(VIDEO_PLACEHOLDER, "")
+                    .replace(AUDIO_PLACEHOLDER, "")
                     .strip()
                 )
-                if not text:
-                    continue
+                content = [{"type": "text", "text": text}]
+                # Insert the image only into the first user turn.
+                if role == "user" and need_image:
+                    content.insert(0, {"type": "image"})
+                    need_image = False
 
-                if role == "user":
-                    content = [{"type": "text", "text": text}]
-                    if sample.get("image") is not None and not used_image:
-                        content.insert(0, {"type": "image"})
-                        used_image = True
-                    messages.append({"role": "user", "content": content})
-                else:
-                    has_assistant = True
-                    messages.append(
-                        {
-                            "role": "assistant",
-                            "content": [{"type": "text", "text": text}],
-                        }
-                    )
-
-            if not messages or not has_assistant:
-                continue
+                messages.append({"role": role, "content": content})
 
             texts.append(
-                self.processor.apply_chat_template(
+                processor.apply_chat_template(
                     messages,
                     tokenize=False,
                     add_generation_prompt=False,
                 )
             )
             sample_ids.append(sample.get("id"))
+            batch_messages.append(messages)
 
-            if used_image:
-                images.append(sample["image"].convert("RGB"))
-
-        if not texts:
-            raise RuntimeError("No valid samples found in batch.")
+            if image is not None and not need_image:
+                image_rgb = image.convert("RGB")
+                images.append(image_rgb)
+            batch_image_objs.append(image_rgb)
 
         model_inputs = self.processor(
             text=texts,
@@ -143,23 +173,21 @@ class MultiModalDataModule(L.LightningDataModule):
             return_tensors="pt",
         )
 
-        labels = model_inputs["input_ids"].clone()
-        # TODO: labels 应该去掉 user 输入, 其他 code, 例如 llama factory 怎么处理的？
-        labels.masked_fill_(
-            model_inputs["attention_mask"] == 0, self.hparams.ignore_index
+        labels = torch.stack(
+            [
+                self._build_assistant_labels(
+                    messages, image_rgb, input_ids_row, attention_mask_row
+                )
+                for messages, image_rgb, input_ids_row, attention_mask_row in zip(
+                    batch_messages,
+                    batch_image_objs,
+                    model_inputs["input_ids"],
+                    model_inputs["attention_mask"],
+                )
+            ]
         )
 
-        image_token_id = getattr(self.processor, "image_token_id", None)
-        if image_token_id is not None:
-            labels.masked_fill_(
-                model_inputs["input_ids"] == image_token_id, self.hparams.ignore_index
-            )
-
-        video_token_id = getattr(self.processor, "video_token_id", None)
-        if video_token_id is not None:
-            labels.masked_fill_(
-                model_inputs["input_ids"] == video_token_id, self.hparams.ignore_index
-            )
+        labels.masked_fill_(model_inputs["attention_mask"] == 0, IGNORE_INDEX)
 
         model_inputs["labels"] = labels
         model_inputs["sample_ids"] = sample_ids
@@ -176,13 +204,11 @@ class MultiModalDataModule(L.LightningDataModule):
         elif len(combined_dataset) == 1:
             dataset = combined_dataset[0]
         else:
-            dataset = (
-                interleave_datasets(
-                    self._dataset,
-                    probabilities=self.data_args._interleave_probs,
-                    seed=get_seed(),
-                    stopping_strategy=self.data_args.interleave_strategy,
-                )
+            dataset = interleave_datasets(
+                self._dataset,
+                probabilities=self.data_args._interleave_probs,
+                seed=get_seed(),
+                stopping_strategy=self.data_args.interleave_strategy,
             )
 
         return DataLoader(
