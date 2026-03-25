@@ -98,8 +98,23 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_class_arguments(ModelArguments, "model")
     parser.add_class_arguments(DataArguments, "data")
-    parser.add_class_arguments(Seq2SeqTrainingArguments, "training")
-    parser.add_class_arguments(FinetuningArguments, "finetuning")
+    parser.add_class_arguments(Seq2SeqTrainingArguments, "train")
+    parser.add_class_arguments(FinetuningArguments, "finetune")
     args = parser.parse_args()
 
-    test_qwen_sft(args.model, args.data, args.training, args.finetuning)
+    # convert namespace to dataclass
+    args.model = ModelArguments(
+        **{k: v for k, v in vars(args.model).items() if not k.startswith("_")}
+    )
+    args.data = DataArguments(
+        **{k: v for k, v in vars(args.data).items() if not k.startswith("_")}
+    )
+    args.train = Seq2SeqTrainingArguments(
+        **{k: v for k, v in vars(args.train).items() if not k.startswith("_")}
+    )
+    args.finetune = FinetuningArguments(
+        **{k: v for k, v in vars(args.finetune).items() if not k.startswith("_")}
+    )
+    args.model._model_max_length = args.data.cutoff_len
+
+    test_qwen_sft(args.model, args.data, args.train, args.finetune)

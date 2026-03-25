@@ -223,9 +223,10 @@ class MultiModalDataModule(L.LightningDataModule):
                 and len(dataset) > self.data_args.max_samples
             ):
                 dataset = dataset.select(range(self.data_args.max_samples))
-            raise RuntimeError(
-                f"Failed to apply max_samples={self.data_args.max_samples} to {type(dataset)}."
-            )
+            else:
+                raise RuntimeError(
+                    f"Failed to apply max_samples={self.data_args.max_samples} to {type(dataset)}."
+                )
 
         return DataLoader(
             dataset,  # ty:ignore[invalid-argument-type]

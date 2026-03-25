@@ -305,32 +305,10 @@ class ModelArguments(
     The class on the most right will be displayed first.
     """
 
-    compute_dtype: torch.dtype | None = field(
+    _model_max_length: int | None = field(
         default=None,
-        init=False,
-        metadata={
-            "help": "Torch data type for computing model outputs, derived from `fp/bf16`. Do not specify it."
-        },
-    )
-    device_map: str | dict[str, Any] | None = field(
-        default=None,
-        init=False,
-        metadata={
-            "help": "Device map for model placement, derived from training stage. Do not specify it."
-        },
-    )
-    model_max_length: int | None = field(
-        default=None,
-        init=False,
         metadata={
             "help": "The maximum input length for model, derived from `cutoff_len`. Do not specify it."
-        },
-    )
-    block_diag_attn: bool = field(
-        default=False,
-        init=False,
-        metadata={
-            "help": "Whether use block diag attention or not, derived from `neat_packing`. Do not specify it."
         },
     )
 
