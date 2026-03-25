@@ -26,8 +26,8 @@ from omegaconf import OmegaConf
 class BaseModelArguments:
     r"""Arguments pertaining to the model."""
 
-    model_name_or_path: str | None = field(
-        default=None,
+    model_name_or_path: str = field(
+        default="Qwen/Qwen3-VL-8B-Instruct",
         metadata={
             "help": "Path to the model weight or identifier from huggingface.co/models or modelscope.cn/models."
         },

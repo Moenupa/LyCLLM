@@ -1,44 +1,36 @@
 import os
-import torch
+
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.strategies import DeepSpeedStrategy
+from transformers import Seq2SeqTrainingArguments
 
-from data.datamodule_ov import MultiModalDataModule
-from learner.llava_ov import LlavaSFTModule
+from lycllm.data.datamodule import MultiModalDataModule
+from lycllm.hparams.data_args import DataArguments
+from lycllm.hparams.finetuning_args import FinetuningArguments
+from lycllm.hparams.model_args import ModelArguments
+from lycllm.learner.qwen import Qwen3VLSFTModule
 
 
-def main():
+def test_qwen_sft(
+    model_args: ModelArguments,
+    data_args: DataArguments,
+    training_args: Seq2SeqTrainingArguments,
+    finetuning_args: FinetuningArguments,
+):
     L.seed_everything(42, workers=True)
-    model_name = "/ppio_net0/code/mllm-lightning/mllm/llava-onevision-qwen2-0.5b-ov-hf"
-    output_dir = "./outputs/llava_onevision_05b_zero3_sft_1epoch"
+    output_dir = "saves/llava_onevision_05b_zero3_sft_1epoch"
 
     dm = MultiModalDataModule(
-        model_name_or_path=model_name,
-        train_datasets=[
-            {
-                "path": "lmms-lab/LLaVA-NeXT-Data",
-                "split": "train",
-                "weight": 1.0,
-                "streaming": False,
-            }
-        ],
-        batch_size=1,
-        num_workers=2,
-        max_length=2048,
-        streaming=True,
+        model_args=model_args,
+        data_args=data_args,
     )
 
-    model_dtype = torch.bfloat16
-
-    lit_model = LlavaSFTModule(
-        model_name_or_path=model_name,
-        lr=1e-5,
-        weight_decay=0.01,
-        trust_remote_code=True,
-        use_gradient_checkpointing=True,
-        torch_dtype=model_dtype,
+    lit_model = Qwen3VLSFTModule(
+        model_args=model_args,
+        training_args=training_args,
+        finetuning_args=finetuning_args,
     )
 
     ckpt_callback = ModelCheckpoint(
@@ -51,7 +43,7 @@ def main():
         monitor=None,
     )
 
-    strategy = DeepSpeedStrategy(
+    _ = DeepSpeedStrategy(
         config={
             "zero_optimization": {
                 "stage": 3,
@@ -79,8 +71,8 @@ def main():
         num_sanity_val_steps=0,
         callbacks=[ckpt_callback],
         logger=WandbLogger(
-            name=f"llava_onevision_05b_zero3_sft",
-            project="mllm-lightning",
+            name="llava_onevision_05b_zero3_sft",
+            project="lycllm",
             log_model=False,
         ),
         default_root_dir=output_dir,
@@ -97,9 +89,17 @@ def main():
         dm.processor.save_pretrained(hf_save_dir)
     trainer.strategy.barrier()
 
-    print(f"HF 权重已保存到: {hf_save_dir}")
-    print(f"Lightning checkpoint: {ckpt_callback.last_model_path}")
+    print("Training completed and model saved to:", hf_save_dir)
 
 
 if __name__ == "__main__":
-    main()
+    from jsonargparse import ArgumentParser
+
+    parser = ArgumentParser()
+    parser.add_class_arguments(ModelArguments, "model")
+    parser.add_class_arguments(DataArguments, "data")
+    parser.add_class_arguments(Seq2SeqTrainingArguments, "training")
+    parser.add_class_arguments(FinetuningArguments, "finetuning")
+    args = parser.parse_args()
+
+    test_qwen_sft(args.model, args.data, args.training, args.finetuning)

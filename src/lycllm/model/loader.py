@@ -107,4 +107,4 @@ def load_tokenizer(model_args: "ModelArguments") -> "TokenizerModule":
 def load_config(model_args: "ModelArguments") -> "PretrainedConfig":
     r"""Load model config."""
     init_kwargs = _get_init_kwargs(model_args)
-    return AutoConfig.from_pretrained(model_args.model_name_or_path, **init_kwargs)  # ty:ignore[invalid-argument-type]
+    return AutoConfig.from_pretrained(model_args.model_name_or_path, **init_kwargs)

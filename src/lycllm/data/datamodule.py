@@ -212,6 +212,21 @@ class MultiModalDataModule(L.LightningDataModule):
                 stopping_strategy=self.data_args.interleave_strategy,
             )
 
+        assert isinstance(dataset, (Dataset, IterableDataset)), (
+            f"Expected a Dataset or IterableDataset after interleaving, but got {type(dataset)}"
+        )
+        if self.data_args.max_samples is not None:
+            if isinstance(dataset, IterableDataset) and self.data_args.streaming:
+                dataset = dataset.take(self.data_args.max_samples)
+            elif (
+                isinstance(dataset, Dataset)
+                and len(dataset) > self.data_args.max_samples
+            ):
+                dataset = dataset.select(range(self.data_args.max_samples))
+            raise RuntimeError(
+                f"Failed to apply max_samples={self.data_args.max_samples} to {type(dataset)}."
+            )
+
         return DataLoader(
             dataset,  # ty:ignore[invalid-argument-type]
             batch_size=self.data_args.preprocessing_batch_size,
