@@ -189,12 +189,12 @@ class BaseModelArguments:
         if (
             self.adapter_name_or_path is not None
         ):  # support merging multiple lora weights
-            self.adapter_name_or_path = [
+            self.adapter_name_or_path = [  # ty:ignore[invalid-assignment]
                 path.strip() for path in self.adapter_name_or_path.split(",")
             ]
 
         if self.add_tokens is not None:  # support multiple tokens
-            self.add_tokens = [token.strip() for token in self.add_tokens.split(",")]
+            self.add_tokens = [token.strip() for token in self.add_tokens.split(",")]  # ty:ignore[invalid-assignment]
 
         # Process special tokens with priority: new_special_tokens_config > add_special_tokens
         if self.new_special_tokens_config is not None:
@@ -213,7 +213,7 @@ class BaseModelArguments:
                 extracted_tokens = list(token_descriptions.keys())
 
                 # Override add_special_tokens with extracted tokens (as list)
-                self.add_special_tokens = extracted_tokens
+                self.add_special_tokens = extracted_tokens  # ty:ignore[invalid-assignment]
 
                 # Store descriptions internally for later use (internal attribute)
                 self._special_token_descriptions = token_descriptions
@@ -223,7 +223,7 @@ class BaseModelArguments:
 
         elif self.add_special_tokens is not None:
             # Priority 2: Use simple comma-separated string (no descriptions)
-            self.add_special_tokens = [
+            self.add_special_tokens = [  # ty:ignore[invalid-assignment]
                 token.strip() for token in self.add_special_tokens.split(",")
             ]
             self._special_token_descriptions = None

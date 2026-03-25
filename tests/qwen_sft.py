@@ -10,7 +10,7 @@ from lycllm.data.datamodule import MultiModalDataModule
 from lycllm.hparams.data_args import DataArguments
 from lycllm.hparams.finetuning_args import FinetuningArguments
 from lycllm.hparams.model_args import ModelArguments
-from lycllm.learner.qwen import Qwen3VLSFTModule
+from lycllm.learner.qwen3vl import Qwen3VLSFTModule
 
 
 def test_qwen_sft(

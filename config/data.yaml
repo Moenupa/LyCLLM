@@ -1,0 +1,7 @@
+dataset_kwargs:
+  - path: lmms-lab/LLaVA-NeXT-Data
+    split: train
+streaming: true
+buffer_size: 1000
+max_samples: 100
+cutoff_len: 2048
